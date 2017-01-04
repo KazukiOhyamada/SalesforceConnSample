@@ -6,6 +6,7 @@ using Salesforce.Common;
 using Salesforce.Force;
 using System.Threading.Tasks;
 using System.Dynamic;
+using System.Net;
 
 namespace SalesforceConnSample
 {
@@ -17,12 +18,33 @@ namespace SalesforceConnSample
 		private static readonly string ConsumerSecret = ConfigurationManager.AppSettings["ConsumerSecret"];
 		private static readonly string Username = ConfigurationManager.AppSettings["Username"];
 		private static readonly string Password = ConfigurationManager.AppSettings["Password"] + SecurityToken;
-		private static readonly string IsSandboxUser = ConfigurationManager.AppSettings["IsSandboxUser"];
 
 		public void button1Clicked(object sender, EventArgs args)
 		{
-			System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls; //must Tls12
-			button1.Text = "You clicked me";
+			ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
+
+			try
+			{
+				var task = RunSample();
+				task.Wait();
+			}
+			catch (Exception e)
+			{
+				Console.WriteLine("----- error -----");
+				Console.WriteLine(e.Message);
+				//Console.WriteLine(e.StackTrace);
+
+				var innerException = e.InnerException;
+				while (innerException != null)
+				{
+					Console.WriteLine(innerException.Message); 
+					Console.WriteLine(innerException.StackTrace);
+
+					innerException = innerException.InnerException;
+				}
+				Console.WriteLine("----- error end -----");
+			}
+			button1.Text = "conn end";
 		}
 
 		private static async Task RunSample()
@@ -31,10 +53,8 @@ namespace SalesforceConnSample
 
 			// Authenticate with Salesforce
 			Console.WriteLine("Authenticating with Salesforce");
-			var url = IsSandboxUser.Equals("true", StringComparison.CurrentCultureIgnoreCase)
-				? "https://test.salesforce.com/services/oauth2/token"
-				: "https://login.salesforce.com/services/oauth2/token";
-
+			var url = "https://login.salesforce.com/services/oauth2/token";
+			Console.WriteLine(ServicePointManager.SecurityProtocol);
 			await auth.UsernamePasswordAsync(ConsumerKey, ConsumerSecret, Username, Password, url);
 			Console.WriteLine("Connected to Salesforce");
 
